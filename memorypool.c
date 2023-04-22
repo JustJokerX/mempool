@@ -34,6 +34,13 @@ int mp_cmp_function(const void* first, const void* second) {
     return 0;
 }
 
+void mp_free_function(BOSNode* node)
+{
+    //node->key = NULL;
+    //memset(node->data, 0, sizeof(BOSNode));
+    //node->data = NULL;
+}
+
 //#define MP_ALIGN_SIZE(_n) (next_pow2(_n))
 #define MP_ALIGN_SIZE(_n) (_n + sizeof(long) - ((sizeof(long) - 1) & _n))
 
@@ -127,9 +134,9 @@ static _MP_Memory* extend_memory_list(MemoryPool* mp, mem_size_t new_mem_sz) {
     mm->id = mp->last_id++;
     mm->next = mp->mlist;
     mp->mlist = mm;
-    mp->tree = bostree_new(mp_cmp_function, NULL);
+    mm->tree = bostree_new(mp_cmp_function, mp_free_function);
     _free = mm->free_list;
-    bostree_insert(mp->tree, _free->alloc_mem, _free, &_free->avl_node);
+    bostree_insert(mm->tree, _free->alloc_mem, _free, &_free->avl_node);
     _free->avl_added = 1;
     return mm;
 }
@@ -156,9 +163,23 @@ static int merge_free_chunk(MemoryPool* mp, _MP_Memory* mm, _MP_Chunk* c) {
 
     p0 = (_MP_Chunk*) ((char*) p1 + p1->alloc_mem);
     while ((char*) p0 < mm->start + mp->mem_pool_size && p0->is_free) {
+        if (p0->avl_added == 1) {
+            bostree_remove(mm->tree, &p0->avl_node);
+            p0->avl_added = 0;
+        }
         MP_DLINKLIST_DEL(mm->free_list, p0);
         p1->alloc_mem += p0->alloc_mem;
         p0 = (_MP_Chunk*) ((char*) p0 + p0->alloc_mem);
+    }
+
+    if (p1->avl_added == 1) {
+        bostree_remove(mm->tree, &p1->avl_node);
+        p1->avl_added = 0;
+    }
+
+    if (p1->avl_added == 0) {
+        bostree_insert(mm->tree, p1->alloc_mem, p1, &p1->avl_node);
+        p1->avl_added = 1;
     }
 
     *(_MP_Chunk**) ((char*) p1 + p1->alloc_mem - MP_CHUNKEND) = p1;
@@ -199,9 +220,9 @@ MemoryPool* MemoryPoolInit(mem_size_t maxmempoolsize, mem_size_t mempoolsize) {
     mp->mlist->next = NULL;
     mp->mlist->id = mp->last_id++;
 
-    mp->tree = bostree_new(mp_cmp_function, NULL);
+    mp->mlist->tree = bostree_new(mp_cmp_function, mp_free_function);
     _free = mp->mlist->free_list;
-    bostree_insert(mp->tree, _free->alloc_mem, _free, &_free->avl_node);
+    bostree_insert(mp->mlist->tree, _free->alloc_mem, _free, &_free->avl_node);
     _free->avl_added = 1;
 
     return mp;
@@ -229,7 +250,7 @@ FIND_FREE_CHUNK:
         _free = mm->free_list;
         _not_free = NULL;
 
-        BOSNode* node = bostree_lookup(mp->tree, total_needed_size);
+        BOSNode* node = bostree_lookup(mm->tree, total_needed_size);
         if (node) {
             _free = node->data;
             if (_free->alloc_mem >= total_needed_size) {
@@ -254,7 +275,7 @@ FIND_FREE_CHUNK:
                     }
                     if (_free->next) _free->next->prev = _free;
 
-                    bostree_insert(mp->tree, _free->alloc_mem, _free, &_free->avl_node);
+                    bostree_insert(mm->tree, _free->alloc_mem, _free, &_free->avl_node);
                     _free->avl_added = 1;
 
                     _not_free->is_free = 0;
@@ -278,7 +299,7 @@ FIND_FREE_CHUNK:
                 MP_UNLOCK(mp);
 #endif
                 if (_not_free->avl_added == 1) {
-                    bostree_remove(mp->tree, &_not_free->avl_node);
+                    bostree_remove(mm->tree, &_not_free->avl_node);
                     _not_free->avl_added = 0;
                 }
                 return (void*) ((char*) _not_free + MP_CHUNKHEADER);
@@ -325,10 +346,7 @@ int MemoryPoolFree(MemoryPool* mp, void* p) {
 
     MP_DLINKLIST_DEL(mm->alloc_list, ck);
     MP_DLINKLIST_INS_FRT(mm->free_list, ck);
-    if (ck->avl_added == 1) {
-        bostree_remove(mp->tree, &ck->avl_node);
-        ck->avl_added = 0;
-    }
+
     ck->is_free = 1;
 
     mm->alloc_mem -= ck->alloc_mem;
@@ -359,10 +377,10 @@ int MemoryPoolDestroy(MemoryPool* mp) {
     MP_LOCK(mp);
 #endif
     _MP_Memory *mm = mp->mlist, *mm1 = NULL;
-    bostree_destroy(mp->tree);
     while (mm) {
         mm1 = mm;
         mm = mm->next;
+        bostree_destroy(mm1->tree);
         free(mm1);
     }
 #ifdef _Z_MEMORYPOOL_THREAD_

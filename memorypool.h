@@ -11,7 +11,7 @@ extern "C" {  // 因为cpp文件默认定义了该宏),则采用C语言方式进
 
 #include <stdlib.h>
 #include <string.h>
-
+#undef NDEBUG
 #include "bostree/bostree.h"
 
 #define mem_size_t unsigned long long
@@ -35,6 +35,7 @@ typedef struct _mp_mem_pool_list {
     mem_size_t alloc_prog_mem;
     _MP_Chunk *free_list, *alloc_list;
     struct _mp_mem_pool_list* next;
+    BOSTree* tree;
 } _MP_Memory;
 
 typedef struct _mp_mem_pool {
@@ -45,7 +46,6 @@ typedef struct _mp_mem_pool {
 #ifdef _Z_MEMORYPOOL_THREAD_
     pthread_mutex_t lock;
 #endif
-    BOSTree*  tree;
 } MemoryPool;
 
 /*
@@ -85,6 +85,11 @@ float MemoryPoolGetUsage(MemoryPool* mp);
 mem_size_t GetProgMemory(MemoryPool* mp);
 float MemoryPoolGetProgUsage(MemoryPool* mp);
 
+inline void PrintTree(MemoryPool* mp) {
+#if !defined(NDEBUG)
+    bostree_print(mp->mlist->tree);
+#endif
+}
 #ifdef __cplusplus
 }
 #endif

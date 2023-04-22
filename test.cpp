@@ -8,7 +8,7 @@
 using namespace std;
 
 #include "memorypool.h"  // 注释这行比较系统malloc与memory pool的性能
-
+#include "bostree/bostree.h"
 // 开启ENABLE_SHOW输出内部信息 会极大的影响性能
 #define ENABLE_SHOW
 // HARD_MODE模式更接近随机分配释放内存的情景, 测试代码Total Usage Size输出失效.
@@ -77,6 +77,7 @@ struct Node {
 
 unsigned int random_uint(unsigned int maxn) {
     unsigned int ret = abs(rand()) % maxn;
+     //unsigned int ret = 0x200;
     return ret > 0 ? ret : 32;
 }
 
@@ -104,6 +105,8 @@ void* test_fn(void* arg) {
             printf("Memory overflow!\n");
             exit(0);
         }
+        //printf("alloc %p\n", mem[i].data);
+        //PrintTree(mp);
         mem[i].size = cur_size;
         *(int*) mem[i].data = 123;
     }
@@ -135,11 +138,14 @@ void* test_fn(void* arg) {
 #endif
 
     for (int i = 0; i < DATA_N; ++i) {
-        // printf("%d ", *(int *)mem[i].data);
+        //printf("free %p\n", (int *)mem[i].data);
+        //PrintTree(mp);
         My_Free(mem[i].data);
+        //PrintTree(mp);
         mem[i].data = NULL;
     }
     printf("\n");
+     PrintTree(mp);
 
     g_mutex.lock();
     total_size += cur_total_size;

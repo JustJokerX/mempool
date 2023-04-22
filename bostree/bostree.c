@@ -572,7 +572,7 @@ unsigned int bostree_rank(BOSNode *node) {
 	}
 	return counter;
 }
-
+#undef NDEBUG
 #if !defined(NDEBUG)
 #include <stdio.h>
 //#include <unistd.h>
@@ -583,17 +583,17 @@ unsigned int bostree_rank(BOSNode *node) {
 */
 
 static void _bostree_print_helper(BOSNode *node) {
-	printf("  %s [label=\"\\N (%d,%d,%d)\"];\n", (char *)node->key, node->left_child_count, node->right_child_count, node->depth);
+	printf("  %p [label=\"\\N (%d,%d,%d)\"];\n", (char *)node->key, node->left_child_count, node->right_child_count, node->depth);
 	if(node->parent_node) {
-		printf("  %s -> %s [color=green];\n", (char *)node->key, (char *)node->parent_node->key);
+		printf("  %p -> %p [color=green];\n", (void *)node->key, (void *)node->data);
 	}
 
 	if(node->left_child_node != NULL) {
-		printf("  %s -> %s\n", (char *)node->key, (char *)node->left_child_node->key);
+		printf("  %p -> %p\n", (void *)node->key, (void *)node->left_child_node->data);
 		_bostree_print_helper(node->left_child_node);
 	}
 	if(node->right_child_node != NULL) {
-		printf("  %s -> %s\n", (char *)node->key, (char *)node->right_child_node->key);
+		printf("  %p -> %p\n", (void *)node->key, (void *)node->right_child_node->data);
 		_bostree_print_helper(node->right_child_node);
 	}
 }

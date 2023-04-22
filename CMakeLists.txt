@@ -7,4 +7,4 @@ cmake_minimum_required(VERSION 2.8)
 project(example)
 
 add_executable(example example.c memorypool.c)
-add_executable(test test.cpp memorypool.c bostree/bostree.h bostree/bostree.c)
+add_executable(test test.cpp memorypool.h memorypool.c bostree/bostree.h bostree/bostree.c)
