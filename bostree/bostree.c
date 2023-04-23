@@ -31,13 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Tree structure */
-struct _BOSTree {
-	BOSNode *root_node;
 
-	BOSTree_cmp_function cmp_function;
-	BOSTree_free_function free_function;
-};
 
 /* Local helper functions */
 static int _imax(const int i1, const int i2) {
@@ -130,8 +124,9 @@ static BOSNode *_bostree_rotate_left(BOSTree *tree, BOSNode *P) {
 
 
 /* API implementation */
-BOSTree *bostree_new(BOSTree_cmp_function cmp_function, BOSTree_free_function free_function) {
-	BOSTree *new_tree = malloc(sizeof(BOSTree));
+BOSTree *bostree_new(BOSTree_cmp_function cmp_function, BOSTree_free_function free_function, void* placement) {
+	//BOSTree *new_tree = malloc(sizeof(BOSTree));
+    BOSTree* new_tree = placement;
 	new_tree->root_node = NULL;
 	new_tree->cmp_function = cmp_function;
 	new_tree->free_function = free_function;
@@ -167,7 +162,7 @@ void bostree_destroy(BOSTree *tree) {
 		node = next;
 	}
 
-	free(tree);
+	//free(tree);
 }
 
 unsigned int bostree_node_count(BOSTree *tree) {

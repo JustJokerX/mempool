@@ -35,7 +35,7 @@ typedef struct _mp_mem_pool_list {
     mem_size_t alloc_prog_mem;
     _MP_Chunk *free_list, *alloc_list;
     struct _mp_mem_pool_list* next;
-    BOSTree* tree;
+    BOSTree tree;
 } _MP_Memory;
 
 typedef struct _mp_mem_pool {
@@ -87,7 +87,7 @@ float MemoryPoolGetProgUsage(MemoryPool* mp);
 
 inline void PrintTree(MemoryPool* mp) {
 #if !defined(NDEBUG)
-    bostree_print(mp->mlist->tree);
+    bostree_print(&mp->mlist->tree);
 #endif
 }
 #ifdef __cplusplus

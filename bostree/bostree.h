@@ -28,9 +28,6 @@
 #ifndef BOSTREE_H
 #define BOSTREE_H
 
-/* Opaque tree structure */
-typedef struct _BOSTree BOSTree;
-
 /* Node structure */
 struct _BOSNode {
 	unsigned int left_child_count;
@@ -69,6 +66,16 @@ typedef int (*BOSTree_cmp_function)(const void *, const void *);
  * structure itself is free()d internally by BOSZTree.
  */
 typedef void (*BOSTree_free_function)(BOSNode *node);
+
+/* Opaque tree structure */
+/* Tree structure */
+struct _BOSTree {
+        BOSNode* root_node;
+
+        BOSTree_cmp_function cmp_function;
+        BOSTree_free_function free_function;
+};
+typedef struct _BOSTree BOSTree;
 
 /**
  * Create a new tree.
